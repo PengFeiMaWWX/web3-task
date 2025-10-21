@@ -69,6 +69,71 @@ func isPalindrome(x int) bool {
 
 }
 
+func isValidString(s string) bool {
+
+	//使用切片模拟栈
+	stack := []rune{}
+
+	//定义括号映射关系
+	pairs := map[rune]rune{
+		'(': ')',
+		'[': ']',
+		'{': '}',
+	}
+
+	//遍历字符串中的每个元素
+	for _, c := range s {
+		// 如果是开括号，压入对应的闭括号
+		if closing, isOpen := pairs[c]; isOpen {
+			stack = append(stack, closing)
+		} else {
+			// 遇到闭括号时检查
+			if len(stack) == 0 || stack[len(stack)-1] != c {
+				return false
+			}
+			// 匹配成功， 弹出栈顶（中从切片（slice）中移除最后一个元素）
+			/**切片表达式
+			:表示从索引 0 开始
+			len(stack)-1表示结束索引（不包含该索引）
+			具体操作
+			len(stack)：获取切片当前长度（元素个数）
+			len(stack)-1：计算新切片的结束索引（比原长度小1）
+			stack[:len(stack)-1]：创建一个新切片，包含原切片从索引 0 到 len(stack)-2的所有元素
+			stack = ...：将新切片赋值回原变量，完成"弹出"操作
+			*/
+			stack = stack[:len(stack)-1]
+
+		}
+	}
+	// 检查栈是否为空
+	return len(stack) == 0
+}
+
+func longestCommonPrefix(strs []string) string {
+	if len(strs) == 0 {
+		return ""
+	}
+	//以第一个字符串为基准
+	prefix := strs[0]
+
+	for i := 1; i < len(strs); i++ {
+		// 逐个比较，直到找到不匹配的位置
+		j := 0
+		for j < len(prefix) && j < len(strs[i]) && prefix[j] == strs[i][j] {
+			j++
+		}
+		// 更新前缀为匹配部分
+		prefix = prefix[:j]
+
+		// 如果前缀为空，提前结束
+		if prefix == "" {
+			return ""
+		}
+	}
+	return prefix
+
+}
+
 func main() {
 
 	// 题目一
@@ -82,4 +147,45 @@ func main() {
 		result := isPalindrome(num)
 		fmt.Printf("是否是回文: %t\n", result)
 	}
+
+	// 题目三
+	//testCases := []struct {
+	//	input    string
+	//	expected bool
+	//}{
+	//	{"()", true},
+	//	{"()[]{}", true},
+	//	{"(]", false},
+	//	{"([)]", false},
+	//	{"{[]}", true},
+	//	{"", true}, // 空字符串有效
+	//}
+	//
+	//for _, tc := range testCases {
+	//	result := isValidString(tc.input)
+	//	fmt.Printf("输入: %-8s 预期: %-5t 实际: %-5t %s\n",
+	//		tc.input, tc.expected, result,
+	//		map[bool]string{true: "✓", false: "✗"}[result == tc.expected])
+	//}
+
+	// 题目四
+	testCases := []struct {
+		input  []string
+		expect string
+	}{
+		{[]string{"flower", "flow", "flight"}, "fl"},
+		{[]string{"dog", "racecar", "car"}, ""},
+		{[]string{"a"}, "a"},
+		{[]string{"", "abc"}, ""},
+		{[]string{"same", "same", "same"}, "same"},
+		{[]string{"prefix", "preface", "preview"}, "pre"},
+		{[]string{}, ""},
+	}
+
+	for _, tc := range testCases {
+		result := longestCommonPrefix(tc.input)
+		fmt.Printf("输入: %v\n预期: %q\n实际: %q\n匹配: %t\n\n",
+			tc.input, tc.expect, result, result == tc.expect)
+	}
+
 }
