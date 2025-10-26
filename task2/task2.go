@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"sync"
 	"time"
 )
@@ -128,6 +129,46 @@ func (s *Scheduler) Run() []TaskResult {
 	return allResults
 }
 
+// 题目五：
+// 题目 ：定义一个 Shape 接口，包含 Area() 和 Perimeter() 两个方法。
+// 然后创建 Rectangle 和 Circle 结构体，实现 Shape 接口。
+// 在主函数中，创建这两个结构体的实例，并调用它们的 Area() 和 Perimeter() 方法。
+// 考察点 ：接口的定义与实现、面向对象编程风格。
+// Shape 接口定义几何形状的基本操作
+type Shape interface {
+	Area() float64
+	Perimeter() float64
+}
+
+// Rectangle 矩形结构体
+type Rectangle struct {
+	Width, Height float64
+}
+
+// 实现 Shape 接口的 Area 方法
+func (r Rectangle) Area() float64 {
+	return r.Width * r.Height
+}
+
+// 实现 Shape 接口的 Perimeter 方法
+func (r Rectangle) Perimeter() float64 {
+	return 2 * (r.Width + r.Height)
+}
+
+// Circle 圆形结构体
+type Circle struct {
+	Radius float64
+}
+
+// 实现 Shape 接口的 Area 方法
+func (c Circle) Area() float64 {
+	return math.Pi * c.Radius * c.Radius
+}
+
+// 实现 Shape 接口的 Perimeter 方法
+func (c Circle) Perimeter() float64 {
+	return 2 * math.Pi * c.Radius
+}
 func main() {
 
 	// 题目1
@@ -185,5 +226,38 @@ func main() {
 		}
 		fmt.Printf("任务: %-8s 耗时: %-12v 状态: %-4s 开始时间: %s\n",
 			result.Name, result.Duration, status, result.StartTime.Format("15:04:05.000"))
+	}
+
+	// 题目5
+	// 创建矩形实例
+	rect := Rectangle{Width: 10, Height: 5}
+
+	// 创建原型实例
+	circle := Circle{Radius: 5}
+
+	// 使用接口处理不同形状 创建 Shape接口类型的切片 存储不同具体类型（Rectangle 和 Circle） 通过接口统一调用方法，实现多态
+	// 数组需要指定长度
+	shapes := []Shape{rect, circle}
+
+	for i, shape := range shapes {
+
+		switch s := shape.(type) {
+		case Circle:
+			fmt.Printf("形状 %d: 圆形 (半径=%.1f)\n", i+1, s.Radius)
+		case Rectangle:
+			fmt.Printf("形状 %d: 矩形 (宽=%.1f, 高=%.1f)\n", i+1, s.Width, s.Height)
+
+		}
+
+		// 通过接口调用方法
+		//%.2f由三部分组成：
+		//
+		//格式化说明符的开始
+		//精度控制，表示保留 2 位小数
+		//表示浮点数格式
+		fmt.Printf("面积：%.2f\n", shape.Area())
+		fmt.Printf("周长: %.2f\n", shape.Perimeter())
+		fmt.Println("------")
+
 	}
 }
