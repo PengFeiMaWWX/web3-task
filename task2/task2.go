@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -185,6 +186,80 @@ type Employee struct {
 func (e Employee) PrintInfo() string {
 	return fmt.Sprintf("Name: %s, Age: %d", e.Name, e.Age)
 }
+
+// 题目七：题目 ：编写一个程序，使用通道实现两个协程之间的通信。
+// 一个协程生成从1到10的整数，并将这些整数发送到通道中，
+// 另一个协程从通道中接收这些整数并打印出来
+// produce 生产者函数，生成1到10的整数并发送到通道
+func produce(ch chan<- int, wg *sync.WaitGroup) {
+
+	defer wg.Done() // 确保函数退出时 ， 通知WaitGroup
+	defer close(ch) //关闭通道 ，通知接收方， 数据已经发送
+
+	for i := 1; i <= 10; i++ {
+		ch <- i // 将整数发送到通道
+		fmt.Printf("发送 %d \n", i)
+	}
+	fmt.Printf("生产者发送完数据")
+}
+
+// 消费者函数 ，从通道中接受函数 并打印
+func consume(ch <-chan int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for num := range ch {
+		fmt.Printf("接收到的整数 %d \n", num)
+	}
+	fmt.Printf("消费者对于函数接收完成")
+}
+
+// 题目八：实现一个带有缓冲的通道，生产者协程向通道中发送100个整数，消费者协程从通道中接收这些整数并打印。
+// 考察点 ：通道的缓冲机制
+// BufferedChannelDemo 演示带有缓冲通道的生产者-消费者模型
+func BufferedChannelDemo(bufferSize, itemCount int) {
+	fmt.Printf("=== 开始演示缓冲通道（缓冲区大小：%d，数据量：%d）===\n", bufferSize, itemCount)
+	// 创建带有指定缓冲大小的通道
+	ch := make(chan int, bufferSize)
+	var wg sync.WaitGroup
+
+	// 启动生产者
+	wg.Add(1)
+	go producer(ch, itemCount, &wg)
+
+	// 启动消费者
+	wg.Add(1)
+
+}
+
+// producer 生产者函数：向通道发送指定数量的整数
+func producer(ch chan<- int, count int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	defer close(ch)
+	fmt.Printf("生产者开始工作，将生产 %d 个整数\n", count)
+	for i := 1; i <= count; i++ {
+		ch <- i //发送整数到通道
+		fmt.Printf("生产整数 %d \n", i)
+		time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond) // 模拟生产耗时
+	}
+	fmt.Printf("生产者工作完成")
+
+}
+
+// consumer 消费者函数：从通道接收并打印整数
+func consumer(ch <-chan int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	receivedCount := 0
+	// 从通道中接收数据 ，直到通道关闭
+	for num := range ch {
+		fmt.Printf("消费 %d \n", num)
+		receivedCount++
+		time.Sleep(100 * time.Millisecond) // 模拟消费耗时（比生产慢）
+	}
+	fmt.Printf("消费者完成工作，共接收 %d 个整数\n", receivedCount)
+
+}
+
 func main() {
 
 	// 题目1
@@ -287,4 +362,40 @@ func main() {
 		EmployeeID: "111",
 	}
 	emp.PrintInfo()
+
+	// 题目七：用于生产者-消费者协程通信
+	// 创建整形无缓冲通道
+	ch := make(chan int)
+
+	// 使用waitGroup等待两个协程
+	var wg2 sync.WaitGroup
+	wg2.Add(2) // 设置需要等待的协程的数量
+
+	// 自动生产者协程
+	go produce(ch, &wg2) //wg的内存地址（指针）
+	// 自动消费者协程
+	go consume(ch, &wg2)
+	wg2.Wait()
+	fmt.Printf("测试完成 ， 所有协程执行完毕")
+
+	// 初始化随机种子
+	rand.Seed(time.Now().UnixNano())
+
+	// 创建带有缓冲的通道，缓冲区大小设为10
+	ch8 := make(chan int, 10)
+
+	// 使用WaitGroup等待生产者和消费者完成
+	var wg8 sync.WaitGroup
+
+	// 启动生产者协程
+	wg8.Add(1)
+	go producer(ch8, 100, &wg8)
+
+	// 启动消费者协程
+	wg8.Add(1)
+	go consumer(ch8, &wg8)
+
+	// 等待所有协程完成
+	wg8.Wait()
+	fmt.Println("程序执行完毕")
 }
