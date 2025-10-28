@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -260,6 +261,54 @@ func consumer(ch <-chan int, wg *sync.WaitGroup) {
 
 }
 
+// 题目 9 ：题目 ：编写一个程序，使用 sync.Mutex 来保护一个共享的计数器。启动10个协程，每个协程对计数器进行1000次递增操作，最后输出计数器的值。
+// 考察点 ： sync.Mutex 的使用、并发数据安全。
+// SharedCounter 使用Mutex保护的共享计数器
+type SharedCount struct {
+	value int
+	mu    sync.Mutex
+}
+
+// Increment 安全的递增计数器
+func (s *SharedCount) Increment() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.value++
+}
+
+// GetValue 获取当前计数器值
+func (c *SharedCount) GetValue() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.value
+
+}
+
+// 题目10 题目 ：使用原子操作（ sync/atomic 包）实现一个无锁的计数器。启动10个协程，每个协程对计数器进行1000次递增操作，最后输出计数器的值。
+// 考察点 ：原子操作、并发数据安全。
+// AtomicCounter 使用原子操作的无锁计数器
+type AtomicCounter struct {
+	value int64
+}
+
+// 原子递增计数器
+func (c *AtomicCounter) Increment() {
+	atomic.AddInt64(&c.value, 1)
+}
+
+// GetValue 获取当前的计数器
+func (c *AtomicCounter) GetValue() int64 {
+	return atomic.LoadInt64(&c.value)
+}
+
+// incrementWorker 协程工作函数
+func incrementWorker(counter *SharedCount, times int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for i := 0; i < times; i++ {
+		counter.Increment()
+	}
+}
+
 func main() {
 
 	// 题目1
@@ -398,4 +447,38 @@ func main() {
 	// 等待所有协程完成
 	wg8.Wait()
 	fmt.Println("程序执行完毕")
+
+	// 题目9
+	counter := &SharedCount{}
+	var wg9 sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg9.Add(1)
+		go func(id int) {
+			defer wg9.Done()
+			// 每个协程递增1000次
+			for j := 0; j < 1000; j++ {
+				counter.Increment()
+			}
+			fmt.Printf("协程%d 递增完成", id)
+		}(i)
+	}
+	wg9.Wait()
+	// 输出最终结果
+	fmt.Printf("最终计数器值: %d (期望: 10000)\n", counter.GetValue())
+
+	// 题目10
+	counter10 := &SharedCount{}
+	var wg10 sync.WaitGroup
+
+	//启动10个协程
+	for i := 0; i < 10; i++ {
+		wg10.Add(1)
+		go incrementWorker(counter10, 1000, &wg10)
+	}
+
+	// 等待所有协程完成
+	wg10.Wait()
+
+	// 输出最总结果
+	fmt.Printf("最终计数器 : %d (期望: 10000)\n", counter10.GetValue())
 }
